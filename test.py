@@ -163,3 +163,6 @@ if 'attendance_db' in locals() and attendance_db.is_connected():
 
 video.release()
 cv2.destroyAllWindows()
+
+
+#Hello Jean hahahah
