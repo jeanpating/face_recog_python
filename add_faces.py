@@ -19,6 +19,7 @@ try:
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS employees (
             id INT AUTO_INCREMENT PRIMARY KEY,
+            emp_id VARCHAR(255) NOT NULL,
             name VARCHAR(255) NOT NULL,
             schedule VARCHAR(10)  -- Assuming the maximum length is 5:55
         )
@@ -33,8 +34,11 @@ facedetect = cv2.CascadeClassifier('data/haarcascade_frontalface_default.xml')
 faces_data = []
 
 i = 0
+face_not_detected_count = 0
+max_face_not_detected_frames = 20  # Adjust this value based on your needs
 
 name = input("Enter Your Name: ")
+emp_id = input("Enter your Employee ID: ")
 hours = input("Enter Hours: ")
 minutes = input("Enter Minutes: ")
 
@@ -42,7 +46,7 @@ minutes = input("Enter Minutes: ")
 schedule = f"{hours}:{minutes}"
 
 try:
-    cursor.execute("INSERT INTO employees (name, schedule) VALUES (%s, %s)", (name, schedule))
+    cursor.execute("INSERT INTO employees (emp_id, name, schedule) VALUES (%s, %s, %s)", (emp_id, name, schedule))
     conn.commit()
     print("Employee details added to the database.")
 except Exception as e:
@@ -58,6 +62,15 @@ while True:
     ret, frame = video.read()
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     faces = facedetect.detectMultiScale(gray, 1.3, 5)
+    
+    if len(faces) == 0:
+        face_not_detected_count += 1
+    else:
+        face_not_detected_count = 0
+
+    if face_not_detected_count >= max_face_not_detected_frames:
+        cv2.putText(frame, "Keep your head straight", (50, 50), cv2.FONT_HERSHEY_COMPLEX, 1, (0, 0, 255), 2)
+
     for (x, y, w, h) in faces:
         crop_img = frame[y:y + h, x:x + w, :]
         resized_img = cv2.resize(crop_img, (50, 50))

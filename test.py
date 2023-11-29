@@ -147,6 +147,30 @@ while True:
         except mysql.connector.Error as err:
             print(f"Error: {err}")
 
+        # Mark employees as absent if they haven't attended
+        try:
+            # Get the list of employees
+            cursor_employees.execute("SELECT name FROM employees")
+            employees = cursor_employees.fetchall()
+
+            # Check attendance for each employee
+            for employee in employees:
+                employee_name = employee[0]
+                check_attendance_query = f"SELECT * FROM {table_name} WHERE name = %s"
+                cursor_attendance.execute(check_attendance_query, (employee_name,))
+                attendance_record = cursor_attendance.fetchone()
+
+                if not attendance_record:
+                    # If no attendance record, mark as absent
+                    insert_absent_query = f"INSERT INTO {table_name} (name, time, status) VALUES (%s, %s, 'Absent')"
+                    values_absent = (employee_name, str(timestamp))
+                    cursor_attendance.execute(insert_absent_query, values_absent)
+                    attendance_db.commit()
+                    print(f"{employee_name} marked as Absent")
+
+        except mysql.connector.Error as err:
+            print(f"Error: {err}")
+
     if k == ord('q'):
         break
 
@@ -163,7 +187,3 @@ if 'attendance_db' in locals() and attendance_db.is_connected():
 
 video.release()
 cv2.destroyAllWindows()
-
-
-#Hello Jean hahahah
-#Hello Denmark hehe
