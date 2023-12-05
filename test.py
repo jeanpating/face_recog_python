@@ -1,4 +1,5 @@
 import cv2
+import dlib
 import pickle
 import numpy as np
 import os
@@ -34,7 +35,9 @@ cursor_employees = employees_db.cursor()
 cursor_attendance = attendance_db.cursor()
 
 video = cv2.VideoCapture(0)
-facedetect = cv2.CascadeClassifier('data/haarcascade_frontalface_default.xml')
+
+# Create a face detector using dlib
+face_detector = dlib.get_frontal_face_detector()
 
 with open('data/names.pkl', 'rb') as w:
     LABELS = pickle.load(w)
@@ -53,9 +56,12 @@ COL_NAMES = ['NAME', 'TIME']
 while True:
     ret, frame = video.read()
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-    faces = facedetect.detectMultiScale(gray, 1.3, 5)
 
-    for (x, y, w, h) in faces:
+    # Use dlib face detector
+    faces = face_detector(gray)
+
+    for face in faces:
+        x, y, w, h = face.left(), face.top(), face.width(), face.height()
         crop_img = frame[y:y+h, x:x+w, :]
         resized_img = cv2.resize(crop_img, (50, 50)).flatten().reshape(1, -1)
         output = knn.predict(resized_img)
@@ -141,32 +147,20 @@ while True:
                 cursor_attendance.execute(insert_query, values)
                 attendance_db.commit()
                 print("Record inserted successfully")
+                toast = Notification(app_id="Attendance Report",
+                                    title="Hello! "+ str(output[0]),
+                                    msg= "You are " + str(status) + "\n" + 
+                                    "Schedule: " + str(schedule[0]) + "\n" + 
+                                    "Time-in: " + str(timestamp),
+                                    duration="short")
+                toast.show()
             else:
                 print("Name already exists in attendancedb")
-
-        except mysql.connector.Error as err:
-            print(f"Error: {err}")
-
-        # Mark employees as absent if they haven't attended
-        try:
-            # Get the list of employees
-            cursor_employees.execute("SELECT name FROM employees")
-            employees = cursor_employees.fetchall()
-
-            # Check attendance for each employee
-            for employee in employees:
-                employee_name = employee[0]
-                check_attendance_query = f"SELECT * FROM {table_name} WHERE name = %s"
-                cursor_attendance.execute(check_attendance_query, (employee_name,))
-                attendance_record = cursor_attendance.fetchone()
-
-                if not attendance_record:
-                    # If no attendance record, mark as absent
-                    insert_absent_query = f"INSERT INTO {table_name} (name, time, status) VALUES (%s, %s, 'Absent')"
-                    values_absent = (employee_name, str(timestamp))
-                    cursor_attendance.execute(insert_absent_query, values_absent)
-                    attendance_db.commit()
-                    print(f"{employee_name} marked as Absent")
+                toast = Notification(app_id="Attendance already taken",
+                                    title="Hello! " + str(output[0]),
+                                    msg= "You have already timed-in",
+                                    duration="short")
+                toast.show()
 
         except mysql.connector.Error as err:
             print(f"Error: {err}")

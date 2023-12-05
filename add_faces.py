@@ -8,17 +8,65 @@ import tkinter as tk
 from tkinter import messagebox
 from imutils import face_utils
 from PIL import Image, ImageTk
-from tkinter import filedialog
-
+from tkinter import ttk, filedialog, messagebox
+import ttkthemes
 
 class EmployeeRegistrationApp:
     def __init__(self, root):
         self.root = root
         self.root.title("Employee Registration")
+        self.root.geometry("950x500")
+
+        self.style = ttkthemes.ThemedStyle(root)
+        self.style.set_theme("breeze")  # You can choose a different theme here
 
         # GUI Components
-        self.label = tk.Label(root, text="Employee Registration", font=("Helvetica", 16))
+        self.label = tk.Label(root, text="Employee Registration", font=("Helvetica", 20, "bold"))
         self.label.pack(pady=10)
+
+        separator = ttk.Separator(root, orient="horizontal")
+        separator.pack(fill="x", pady=5)
+        
+        # Styling
+        style = ttk.Style()
+
+        # Configure the style for TButton (normal state)
+        self.style.configure("TButton",
+                            padding=(10, 5),       # Padding
+                            font=("Helvetica", 9), # Font
+                            borderwidth=2,         # Border width
+                            relief="groove"        # Border style
+                            )
+
+        self.style.configure("TButton.TButton",
+                            background="#4CAF50",  # Background color for normal state
+                            foreground="black"     # Text color for normal state
+                            )
+
+        self.style.configure("TButton.TButton:hover",
+                            background="#16ba3f",  # Background color for hover state
+                            foreground="white"      # Text color for hover state
+                            )
+
+        # Create frames
+        self.left_frame = ttk.Frame(self.root)
+        self.left_frame.pack(side=tk.LEFT, fill=tk.Y, padx=20)
+
+        self.middle_frame = ttk.Frame(self.root)
+        self.middle_frame.pack(side=tk.LEFT, fill=tk.Y, padx=20)
+
+        self.right_frame = ttk.Frame(self.root)
+        self.right_frame.pack(side=tk.LEFT, fill=tk.Y, padx=20)
+
+        # Subheaders
+        basic_info_label = ttk.Label(self.left_frame, text="BASIC INFORMATION", font=("Helvetica", 14, "bold"))
+        basic_info_label.pack(pady=10)
+
+        schedule_label = ttk.Label(self.middle_frame, text="SCHEDULE", font=("Helvetica", 14, "bold"))
+        schedule_label.pack(pady=10)
+
+        upload_picture_label = ttk.Label(self.right_frame, text="UPLOAD A PICTURE", font=("Helvetica", 14, "bold"))
+        upload_picture_label.pack(pady=10)
 
         self.conn = mysql.connector.connect(
             host="localhost",
@@ -56,28 +104,41 @@ class EmployeeRegistrationApp:
         except Exception as e:
             print(f"Error creating table: {e}")
 
-        self.full_name_entry = self.create_entry("Full Name:")
-        self.emp_id_entry = self.create_entry("Employee ID:")
-        self.dept_entry = self.create_entry("Department:")
-        self.address_entry = self.create_entry("Address:")
-        self.contact_entry = self.create_entry("Contact Number:")
-        self.email_entry = self.create_entry("Email Address:")
+        # Basic information on the left
+        self.full_name_entry = self.create_entry(self.left_frame, "Full Name:")
+        self.emp_id_entry = self.create_entry(self.left_frame, "Employee ID:")
+        self.dept_entry = self.create_entry(self.left_frame, "Department:")
+        self.address_entry = self.create_entry(self.left_frame, "Address:")
+        self.contact_entry = self.create_entry(self.left_frame, "Contact Number:")
+        self.email_entry = self.create_entry(self.left_frame, "Email Address:")
 
-        self.starting_hours_entry = self.create_entry("Starting Hours:")
-        self.starting_minutes_entry = self.create_entry("Starting Minutes:")
-        self.final_hours_entry = self.create_entry("Final Hours:")
-        self.final_minutes_entry = self.create_entry("Final Minutes:")
+        # Schedule in the middle
+        starting_hours_label = ttk.Label(self.middle_frame, text="Time-in", font=("Helvetica", 12))
+        starting_hours_label.pack(pady=10)
 
-        self.picture_label = tk.Label(root)
-        self.picture_label.pack()
+        self.starting_hours_entry = self.create_entry(self.middle_frame, "Starting Hours:")
+        self.starting_minutes_entry = self.create_entry(self.middle_frame, "Starting Minutes:")
 
-        self.picture_button = tk.Button(root, text="Upload a Picture", command=self.upload_picture)
+        final_hours_label = ttk.Label(self.middle_frame, text="Time-out", font=("Helvetica", 12))
+        final_hours_label.pack(pady=10)
+
+        self.final_hours_entry = self.create_entry(self.middle_frame, "Final Hours:")
+        self.final_minutes_entry = self.create_entry(self.middle_frame, "Final Minutes:")
+
+        # Upload pictures on the right
+        self.picture_frame = ttk.Frame(self.right_frame, borderwidth=2, relief="solid", width=100, height=100)
+        self.picture_frame.pack(pady=10)
+
+        self.picture_label = tk.Label(self.picture_frame)  # Add a label inside the frame
+        self.picture_label.pack(fill='both', expand=True)
+
+        self.picture_button = ttk.Button(self.right_frame, text="Upload a Picture", command=self.upload_picture)
         self.picture_button.pack(pady=10)
 
-        self.take_picture_button = tk.Button(root, text="Take a Picture", command=self.take_picture)
+        self.take_picture_button = ttk.Button(self.right_frame, text="Take a Picture", command=self.take_picture)
         self.take_picture_button.pack(pady=10)
 
-        self.register_button = tk.Button(root, text="Register Employee", command=self.register_employee)
+        self.register_button = ttk.Button(self.right_frame, text="Register Employee", command=self.register_employee, style="TButton.TButton")
         self.register_button.pack(pady=20)
 
         # Database Connection
@@ -107,12 +168,12 @@ class EmployeeRegistrationApp:
         self.camera_opened = False
         self.camera = None
 
-    def create_entry(self, label_text):
-        frame = tk.Frame(self.root)
-        frame.pack(pady=5)
-        label = tk.Label(frame, text=label_text)
+    def create_entry(self, frame, label_text):
+        entry_frame = ttk.Frame(frame)
+        entry_frame.pack(pady=5)
+        label = ttk.Label(entry_frame, text=label_text, padding=(20, 0))  # Add left padding to the label
         label.pack(side=tk.LEFT)
-        entry = tk.Entry(frame)
+        entry = ttk.Entry(entry_frame)
         entry.pack(side=tk.RIGHT)
         return entry
 
@@ -261,5 +322,11 @@ class EmployeeRegistrationApp:
 if __name__ == "__main__":
     root = tk.Tk()
     app = EmployeeRegistrationApp(root)
+    screen_width = root.winfo_screenwidth()
+    screen_height = root.winfo_screenheight()
+    x_position = int((screen_width - root.winfo_reqwidth()) / 2)
+    y_position = int((screen_height - root.winfo_reqheight()) / 2)
+    root.resizable(False, False)
     root.protocol("WM_DELETE_WINDOW", app.on_closing)
     root.mainloop()
+    
