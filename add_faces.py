@@ -230,14 +230,14 @@ class EmployeeRegistrationApp:
             return
 
         try:
-            # Inserting data into the database
+            # Inserting data into the employeesdb database
             self.cursor.execute("""
                 INSERT INTO employees 
                 (emp_id, name, department, address, contact_number, email_address, schedule, final_schedule, picture_path)
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
             """, (emp_id, name, dept, address, contact, email, starting_schedule, final_schedule, self.picture_path))
             self.conn.commit()
-            messagebox.showinfo("Success", "Employee details added to the database.")
+            messagebox.showinfo("Success", "Employee details added to the employeesdb database.")
         except Exception as e:
             print(f"Error: {e}")
             self.conn.rollback()
@@ -247,6 +247,20 @@ class EmployeeRegistrationApp:
         self.cursor.execute("SELECT LAST_INSERT_ID()")
         employee_id = self.cursor.fetchone()[0]
         print(f"Employee ID is: {employee_id}")
+
+        # Inserting data into the scheduledb database with emp_id and other fields as NULL
+        try:
+            self.cursor.execute("""
+                INSERT INTO scheduledb.employees 
+                (emp_id, name, picture_path, schedule)
+                VALUES (%s, %s, %s, NULL)
+            """, (emp_id, name, self.picture_path))
+            self.conn.commit()
+            print("Employee details added to the scheduledb database.")
+        except Exception as e:
+            print(f"Error: {e}")
+            self.conn.rollback()
+            messagebox.showerror("Error", f"Error: {e}")
 
         # Face Recognition
         while True:
