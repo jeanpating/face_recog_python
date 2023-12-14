@@ -9,7 +9,7 @@ import mysql.connector
 import csv
 from win32com.client import Dispatch
 import pandas as pd
-from winotify import Notification
+from winotify import Notification, audio
 from sklearn.neighbors import KNeighborsClassifier
 
 def speak(str1):
@@ -36,7 +36,6 @@ cursor_attendance = attendance_db.cursor()
 
 video = cv2.VideoCapture(0)
 
-# Uses Histogram of Oriented Gradients (HOG)
 # Create a face detector using dlib
 face_detector = dlib.get_frontal_face_detector()
 
@@ -54,32 +53,29 @@ imgBackground = cv2.imread("background.png")
 
 COL_NAMES = ['NAME', 'TIME']
 
-# Set a flag to indicate whether attendance should be taken or not
-take_attendance = False
-
-# Store the timestamp of the last attendance record
-last_attendance_time = time.time()
+# Initialize attendance list outside the loop
+attendance = []
 
 while True:
     ret, frame = video.read()
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
+    # Use dlib face detector
     faces = face_detector(gray)
 
-    # Reset the attendance flag when a face is detected
-    if len(faces) > 0:
-        take_attendance = False
+    # Use a single timestamp for the entire frame
+    ts = time.time()
+    date = datetime.fromtimestamp(ts).strftime("%d-%m-%Y")
+    timestamp = datetime.fromtimestamp(ts).strftime("%H:%M:%S") 
+    exist = os.path.isfile("Attendance/Attendance_" + date + ".csv")
 
     for face in faces:
         x, y, w, h = face.left(), face.top(), face.width(), face.height()
         crop_img = frame[y:y+h, x:x+w, :]
         resized_img = cv2.resize(crop_img, (50, 50)).flatten().reshape(1, -1)
         output = knn.predict(resized_img)
-        ts = time.time()
-        date = datetime.fromtimestamp(ts).strftime("%d-%m-%Y")
-        timestamp = datetime.fromtimestamp(ts).strftime("%H:%M:%S")
-        exist = os.path.isfile("Attendance/Attendance_" + date + ".csv")
 
+        # Fetch the employee's schedule from the 'employeesdb' database
         schedule_query = "SELECT schedule FROM employees WHERE name = %s"
         cursor_employees.execute(schedule_query, (str(output[0]),))
         schedule = cursor_employees.fetchone()
@@ -88,6 +84,7 @@ while True:
             scheduled_time = datetime.strptime(schedule[0], "%H:%M")
             attendance_time = datetime.strptime(timestamp, "%H:%M:%S")
 
+            # Compare attendance time with scheduled time
             if attendance_time < scheduled_time:
                 status = "Early"
             elif attendance_time == scheduled_time:
@@ -103,18 +100,12 @@ while True:
         cv2.putText(frame, str(output[0]), (x, y-15), cv2.FONT_HERSHEY_COMPLEX, 1, (255, 255, 255), 1)
         cv2.rectangle(frame, (x, y), (x+w, y+h), (50, 50, 255), 1)
 
-        attendance = [str(output[0]), str(timestamp)]
+        # Append values to the attendance list
+        attendance.append([str(output[0]), str(timestamp)])
 
-    # If no faces are detected and the attendance flag is not set, set the flag
-    if len(faces) == 0 and not take_attendance:
-        take_attendance = True
-
-    # Take attendance only when the flag is set and a certain time has passed since the last record
-    if take_attendance and time.time() - last_attendance_time > 60:  # Adjust the delay as needed (60 seconds in this case)
-        ts = time.time()
-        date = datetime.fromtimestamp(ts).strftime("%d-%m-%Y")
-        timestamp = datetime.fromtimestamp(ts).strftime("%H:%M:%S")
-        exist = os.path.isfile("Attendance/Attendance_" + date + ".csv")
+    imgBackground[162:162 + 480, 55:55 + 640] = frame
+    cv2.imshow("Frame", imgBackground)
+    k = cv2.waitKey(1)
 
     if exist:
         with open("Attendance/Attendance_" + date + ".csv", "+a") as csvfile:
@@ -124,21 +115,16 @@ while True:
                                     title="Hello! " + str(output[0]),
                                     msg="You have already timed-in",
                                     duration="short")
-                # toast.show()
+                toast.show()
                 csvfile.close()
             else:
                 with open("Attendance/Attendance_" + date + ".csv", "+a") as csvfile:
                     writer = csv.writer(csvfile)
-                    writer.writerow(attendance)
+                    writer.writerow(attendance[-1])  # Write the last item in the list
                 csvfile.close()
-    else:
-        with open("Attendance/Attendance_" + date + ".csv", "a") as csvfile:
-            writer=csv.writer(csvfile)
-            writer.writerow(COL_NAMES)
-            writer.writerow(attendance)    
-        csvfile.close();            
 
     try:
+        # Create the attendance_table if it doesn't exist in 'attendancedb'
         current_date = datetime.fromtimestamp(ts).strftime("%d_%m_%Y")
         table_name = f"attendance_table_{current_date}"
         create_table_query = f"""
@@ -152,37 +138,35 @@ while True:
         cursor_attendance.execute(create_table_query)
         attendance_db.commit()
 
+        # Check for duplicate name
         check_duplicate_query = f"SELECT name FROM {table_name} WHERE name = %s"
         cursor_attendance.execute(check_duplicate_query, (str(output[0]),))
         existing_name = cursor_attendance.fetchone()
 
         if not existing_name:
+            # If the name doesn't exist, insert it into the table in 'attendancedb'
             insert_query = f"INSERT INTO {table_name} (name, time, status) VALUES (%s, %s, %s)"
             values = (str(output[0]), str(timestamp), status)
             cursor_attendance.execute(insert_query, values)
             attendance_db.commit()
             print("Record inserted successfully")
             toast = Notification(app_id="Attendance Report",
-                                title="Hello! " + str(output[0]),
-                                msg="You are " + str(status) + "\n" +
-                                    "Schedule: " + str(schedule[0]) + "\n" +
-                                    "Time-in: " + str(timestamp),
+                                title="Hello! "+ str(output[0]),
+                                msg= "You are " + str(status) + "\n" + 
+                                "Schedule: " + str(schedule[0]) + "\n" + 
+                                "Time-in: " + str(timestamp),
                                 duration="short")
             toast.show()
         else:
             print("Name already exists in attendancedb")
             toast = Notification(app_id="Attendance already taken",
                                 title="Hello! " + str(output[0]),
-                                msg="You have already timed-in",
+                                msg= "You have already timed-in",
                                 duration="short")
             toast.show()
 
     except mysql.connector.Error as err:
         print(f"Error: {err}")
-
-    imgBackground[162:162 + 480, 55:55 + 640] = frame
-    cv2.imshow("Frame", imgBackground)
-    k = cv2.waitKey(1)
 
     if k == ord('q'):
         break
