@@ -124,12 +124,11 @@ while True:
                 csvfile.close()
 
     try:
-        # Create the attendance_table if it doesn't exist in 'attendancedb'
-        current_date = datetime.fromtimestamp(ts).strftime("%d_%m_%Y")
-        table_name = f"attendance_table_{current_date}"
-        create_table_query = f"""
-            CREATE TABLE IF NOT EXISTS {table_name} (
+        # Create the 'attendance' table if it doesn't exist in 'attendancedb'
+        create_table_query = """
+            CREATE TABLE IF NOT EXISTS attendance (
                 id INT AUTO_INCREMENT PRIMARY KEY,
+                date DATE,
                 name VARCHAR(255),
                 time VARCHAR(255),
                 status VARCHAR(255)
@@ -138,30 +137,36 @@ while True:
         cursor_attendance.execute(create_table_query)
         attendance_db.commit()
 
-        # Check for duplicate name
-        check_duplicate_query = f"SELECT name FROM {table_name} WHERE name = %s"
-        cursor_attendance.execute(check_duplicate_query, (str(output[0]),))
-        existing_name = cursor_attendance.fetchone()
+        # Check for duplicate record for the same person on the same date
+        check_duplicate_query = "SELECT id FROM attendance WHERE name = %s AND date = %s"
+        check_values = (str(output[0]), datetime.strptime(date, "%d-%m-%Y").strftime("%Y-%m-%d"))
+        cursor_attendance.execute(check_duplicate_query, check_values)
+        existing_record = cursor_attendance.fetchone()
+        print(f"Existing Record ID: {existing_record}")
 
-        if not existing_name:
-            # If the name doesn't exist, insert it into the table in 'attendancedb'
-            insert_query = f"INSERT INTO {table_name} (name, time, status) VALUES (%s, %s, %s)"
-            values = (str(output[0]), str(timestamp), status)
-            cursor_attendance.execute(insert_query, values)
+        # Print the raw SQL query for additional debugging
+        print(f"Raw SQL Query: {cursor_attendance.statement}")
+
+        # Check if the result is None or not
+        if existing_record is None:
+            # If there's no existing record for the same person on the same date, insert a new record
+            insert_query = "INSERT INTO attendance (date, name, time, status) VALUES (%s, %s, %s, %s)"
+            insert_values = (datetime.strptime(date, "%d-%m-%Y").strftime("%Y-%m-%d"), str(output[0]), str(timestamp), status)
+            cursor_attendance.execute(insert_query, insert_values)
             attendance_db.commit()
             print("Record inserted successfully")
             toast = Notification(app_id="Attendance Report",
-                                title="Hello! "+ str(output[0]),
-                                msg= "You are " + str(status) + "\n" + 
-                                "Schedule: " + str(schedule[0]) + "\n" + 
-                                "Time-in: " + str(timestamp),
+                                title="Hello! " + str(output[0]),
+                                msg="You are " + str(status) + "\n" +
+                                    "Schedule: " + str(schedule[0]) + "\n" +
+                                    "Time-in: " + str(timestamp),
                                 duration="short")
             toast.show()
         else:
-            print("Name already exists in attendancedb")
+            print("Attendance for the same person on the same date already exists in attendancedb")
             toast = Notification(app_id="Attendance already taken",
                                 title="Hello! " + str(output[0]),
-                                msg= "You have already timed-in",
+                                msg="You have already timed-in today",
                                 duration="short")
             toast.show()
 
