@@ -31,8 +31,16 @@ attendance_db = mysql.connector.connect(
     database="attendancedb"
 )
 
+schedule_db = mysql.connector.connect(
+    host="localhost",
+    user="root",
+    password="",
+    database="scheduledb"
+)
+
 cursor_employees = employees_db.cursor()
 cursor_attendance = attendance_db.cursor()
+cursor_schedule = schedule_db.cursor()
 
 video = cv2.VideoCapture(0)
 
@@ -76,9 +84,9 @@ while True:
         output = knn.predict(resized_img)
 
         # Fetch the employee's schedule from the 'employeesdb' database
-        schedule_query = "SELECT schedule FROM employees WHERE name = %s"
-        cursor_employees.execute(schedule_query, (str(output[0]),))
-        schedule = cursor_employees.fetchone()
+        schedule_query = "SELECT am_time_in FROM employee_schedule WHERE name = %s"
+        cursor_schedule.execute(schedule_query, (str(output[0]),))
+        schedule = cursor_schedule.fetchone()
 
         if schedule:
             scheduled_time = datetime.strptime(schedule[0], "%H:%M")
@@ -186,6 +194,11 @@ if 'attendance_db' in locals() and attendance_db.is_connected():
     cursor_attendance.close()
     attendance_db.close()
     print("Connection to attendancedb closed")
+
+if 'schedule_db' in locals() and schedule_db.is_connected():
+    cursor_attendance.close()
+    schedule_db.close()
+    print("Connection to scheduledb closed")    
 
 video.release()
 cv2.destroyAllWindows()
