@@ -62,8 +62,8 @@ class EmployeeRegistrationApp:
         basic_info_label = ttk.Label(self.left_frame, text="BASIC INFORMATION", font=("Helvetica", 14, "bold"))
         basic_info_label.pack(pady=10)
 
-        schedule_label = ttk.Label(self.middle_frame, text="SCHEDULE", font=("Helvetica", 14, "bold"))
-        schedule_label.pack(pady=10)
+        # schedule_label = ttk.Label(self.middle_frame, text="SCHEDULE", font=("Helvetica", 14, "bold"))
+        # schedule_label.pack(pady=10)
 
         upload_picture_label = ttk.Label(self.right_frame, text="UPLOAD A PICTURE", font=("Helvetica", 14, "bold"))
         upload_picture_label.pack(pady=10)
@@ -89,11 +89,10 @@ class EmployeeRegistrationApp:
                 emp_id VARCHAR(255) UNIQUE NOT NULL,
                 name VARCHAR(255) NOT NULL,
                 department VARCHAR(255),
+                position VARCHAR(255),
                 address VARCHAR(255),
                 contact_number VARCHAR(20),
                 email_address VARCHAR(255),
-                schedule VARCHAR(10),
-                final_schedule VARCHAR(10),
                 picture_path VARCHAR(255)
             )
         """
@@ -108,22 +107,23 @@ class EmployeeRegistrationApp:
         self.full_name_entry = self.create_entry(self.left_frame, "Full Name:")
         self.emp_id_entry = self.create_entry(self.left_frame, "Employee ID:")
         self.dept_entry = self.create_entry(self.left_frame, "Department:")
+        self.pos_entry = self.create_entry(self.left_frame, "Position:")
         self.address_entry = self.create_entry(self.left_frame, "Address:")
         self.contact_entry = self.create_entry(self.left_frame, "Contact Number:")
         self.email_entry = self.create_entry(self.left_frame, "Email Address:")
 
-        # Schedule in the middle
-        starting_hours_label = ttk.Label(self.middle_frame, text="Time-in", font=("Helvetica", 12))
-        starting_hours_label.pack(pady=10)
+        # # Schedule in the middle
+        # starting_hours_label = ttk.Label(self.middle_frame, text="Time-in", font=("Helvetica", 12))
+        # starting_hours_label.pack(pady=10)
 
-        self.starting_hours_entry = self.create_entry(self.middle_frame, "Starting Hours:")
-        self.starting_minutes_entry = self.create_entry(self.middle_frame, "Starting Minutes:")
+        # self.starting_hours_entry = self.create_entry(self.middle_frame, "Starting Hours:")
+        # self.starting_minutes_entry = self.create_entry(self.middle_frame, "Starting Minutes:")
 
-        final_hours_label = ttk.Label(self.middle_frame, text="Time-out", font=("Helvetica", 12))
-        final_hours_label.pack(pady=10)
+        # final_hours_label = ttk.Label(self.middle_frame, text="Time-out", font=("Helvetica", 12))
+        # final_hours_label.pack(pady=10)
 
-        self.final_hours_entry = self.create_entry(self.middle_frame, "Final Hours:")
-        self.final_minutes_entry = self.create_entry(self.middle_frame, "Final Minutes:")
+        # self.final_hours_entry = self.create_entry(self.middle_frame, "Final Hours:")
+        # self.final_minutes_entry = self.create_entry(self.middle_frame, "Final Minutes:")
 
         # Upload pictures on the right
         self.picture_frame = ttk.Frame(self.right_frame, borderwidth=2, relief="solid", width=100, height=100)
@@ -213,17 +213,18 @@ class EmployeeRegistrationApp:
         name = self.full_name_entry.get()
         emp_id = self.emp_id_entry.get()
         dept = self.dept_entry.get()
+        pos = self.pos_entry.get()
         address = self.address_entry.get()
         contact = self.contact_entry.get()
         email = self.email_entry.get()
 
-        starting_hours = self.starting_hours_entry.get()
-        starting_minutes = self.starting_minutes_entry.get()
-        final_hours = self.final_hours_entry.get()
-        final_minutes = self.final_minutes_entry.get()
+        # starting_hours = self.starting_hours_entry.get()
+        # starting_minutes = self.starting_minutes_entry.get()
+        # final_hours = self.final_hours_entry.get()
+        # final_minutes = self.final_minutes_entry.get()
 
-        starting_schedule = f"{starting_hours}:{starting_minutes}"
-        final_schedule = f"{final_hours}:{final_minutes}"
+        # starting_schedule = f"{starting_hours}:{starting_minutes}"
+        # final_schedule = f"{final_hours}:{final_minutes}"
 
         if not self.picture_path:
             messagebox.showerror("Error", "Please upload or take a picture first.")
@@ -233,9 +234,9 @@ class EmployeeRegistrationApp:
             # Inserting data into the employeesdb database
             self.cursor.execute("""
                 INSERT INTO employees 
-                (emp_id, name, department, address, contact_number, email_address, schedule, final_schedule, picture_path)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-            """, (emp_id, name, dept, address, contact, email, starting_schedule, final_schedule, self.picture_path))
+                (emp_id, name, department, position, address, contact_number, email_address, picture_path)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            """, (emp_id, name, dept, pos, address, contact, email, self.picture_path))
             self.conn.commit()
             messagebox.showinfo("Success", "Employee details added to the employeesdb database.")
         except Exception as e:
