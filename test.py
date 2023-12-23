@@ -6,10 +6,8 @@ import os
 import time
 from datetime import datetime
 import mysql.connector
-import csv
 from win32com.client import Dispatch
-import pandas as pd
-from winotify import Notification, audio
+from winotify import Notification
 from sklearn.neighbors import KNeighborsClassifier
 
 def speak(str1):
@@ -59,10 +57,11 @@ knn.fit(FACES, LABELS)
 
 imgBackground = cv2.imread("background.png")
 
-COL_NAMES = ['NAME', 'TIME']
-
 # Initialize attendance list outside the loop
 attendance = []
+
+# Dictionary to track attendance attempts
+attendance_attempts = {}
 
 while True:
     ret, frame = video.read()
@@ -109,27 +108,26 @@ while True:
         cv2.rectangle(frame, (x, y), (x+w, y+h), (50, 50, 255), 1)
 
         # Append values to the attendance list
-        attendance.append([str(output[0]), str(timestamp)])
+        key = f"{str(output[0])}_{date}"
+        if key not in attendance_attempts:
+            attendance_attempts[key] = 1
+        else:
+            attendance_attempts[key] += 1
+
+        # Limit the attempts to a maximum of 4
+        if attendance_attempts[key] > 4:
+            print("Maximum attendance attempts reached for today.")
+            continue
+
+        clock_types = ['AM-TIME-IN', 'AM-TIME-OUT', 'PM-TIME-IN', 'PM-TIME-OUT']
+        clock_type = clock_types[attendance_attempts[key] - 1]
+
+        # Append values to the attendance list
+        attendance.append([str(output[0]), str(timestamp), clock_type])
 
     imgBackground[162:162 + 480, 55:55 + 640] = frame
     cv2.imshow("Frame", imgBackground)
     k = cv2.waitKey(1)
-
-    if exist:
-        with open("Attendance/Attendance_" + date + ".csv", "+a") as csvfile:
-            check = pd.read_csv("Attendance/Attendance_" + date + ".csv")
-            if str(output[0]) in check.values:
-                toast = Notification(app_id="Attendance already taken",
-                                    title="Hello! " + str(output[0]),
-                                    msg="You have already timed-in",
-                                    duration="short")
-                toast.show()
-                csvfile.close()
-            else:
-                with open("Attendance/Attendance_" + date + ".csv", "+a") as csvfile:
-                    writer = csv.writer(csvfile)
-                    writer.writerow(attendance[-1])  # Write the last item in the list
-                csvfile.close()
 
     try:
         # Create the 'attendance' table if it doesn't exist in 'attendancedb'
@@ -139,15 +137,16 @@ while True:
                 date DATE,
                 name VARCHAR(255),
                 time VARCHAR(255),
-                status VARCHAR(255)
+                status VARCHAR(255),
+                clock VARCHAR(255)
             )
         """
         cursor_attendance.execute(create_table_query)
         attendance_db.commit()
 
-        # Check for duplicate record for the same person on the same date
-        check_duplicate_query = "SELECT id FROM attendance WHERE name = %s AND date = %s"
-        check_values = (str(output[0]), datetime.strptime(date, "%d-%m-%Y").strftime("%Y-%m-%d"))
+        # Check for duplicate record for the same person, same date, and same clock type
+        check_duplicate_query = "SELECT id FROM attendance WHERE name = %s AND date = %s AND clock = %s"
+        check_values = (str(output[0]), datetime.strptime(date, "%d-%m-%Y").strftime("%Y-%m-%d"), clock_type)
         cursor_attendance.execute(check_duplicate_query, check_values)
         existing_record = cursor_attendance.fetchone()
         print(f"Existing Record ID: {existing_record}")
@@ -157,9 +156,9 @@ while True:
 
         # Check if the result is None or not
         if existing_record is None:
-            # If there's no existing record for the same person on the same date, insert a new record
-            insert_query = "INSERT INTO attendance (date, name, time, status) VALUES (%s, %s, %s, %s)"
-            insert_values = (datetime.strptime(date, "%d-%m-%Y").strftime("%Y-%m-%d"), str(output[0]), str(timestamp), status)
+            # If there's no existing record for the same person, same date, and same clock type, insert a new record
+            insert_query = "INSERT INTO attendance (date, name, time, status, clock) VALUES (%s, %s, %s, %s, %s)"
+            insert_values = (datetime.strptime(date, "%d-%m-%Y").strftime("%Y-%m-%d"), str(output[0]), str(timestamp), status, clock_type)
             cursor_attendance.execute(insert_query, insert_values)
             attendance_db.commit()
             print("Record inserted successfully")
@@ -171,7 +170,7 @@ while True:
                                 duration="short")
             toast.show()
         else:
-            print("Attendance for the same person on the same date already exists in attendancedb")
+            print("Attendance for the same person, same date, and same clock type already exists in attendancedb")
             toast = Notification(app_id="Attendance already taken",
                                 title="Hello! " + str(output[0]),
                                 msg="You have already timed-in today",
