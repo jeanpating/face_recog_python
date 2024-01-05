@@ -87,27 +87,28 @@ while True:
         output = knn.predict(resized_img)
 
         # Fetch the employee's schedule from the 'employeesdb' database
-        schedule_query = "SELECT am_time_in FROM employee_schedule WHERE name = %s"
+        schedule_query = "SELECT am_time_in, pm_time_in FROM employee_schedule WHERE name = %s"
         cursor_schedule.execute(schedule_query, (str(output[0]),))
         schedule = cursor_schedule.fetchone()
 
         if schedule:
-            scheduled_time = datetime.strptime(schedule[0], "%H:%M")
+            am_time_in, pm_time_in = schedule
+
+            scheduled_time_am = datetime.strptime(am_time_in, "%H:%M")
+            scheduled_time_pm = datetime.strptime(pm_time_in, "%H:%M")
             attendance_time = datetime.strptime(timestamp, "%H:%M:%S")
 
             # Determine if it's AM or PM timeframe
             if 1 <= attendance_time.hour <= 11:
-                clock_types = ['AM-TIME-IN', 'AM-TIME-OUT']
+                clock_type = 'AM-TIME-IN' if attendance_time < scheduled_time_am else 'AM-TIME-OUT'
             else:
-                clock_types = ['PM-TIME-IN', 'PM-TIME-OUT']
+                clock_type = 'PM-TIME-IN' if attendance_time < scheduled_time_pm else 'PM-TIME-OUT'
 
             # Compare attendance time with scheduled time
-            if attendance_time < scheduled_time:
-                status = "Early"
-            elif attendance_time == scheduled_time:
-                status = "On Time"
+            if 1 <= attendance_time.hour <= 11:
+                status = "Early" if attendance_time < scheduled_time_am else "On Time" if attendance_time == scheduled_time_am else "Late"
             else:
-                status = "Late"
+                status = "Early" if attendance_time < scheduled_time_pm else "On Time" if attendance_time == scheduled_time_pm else "Late"
 
             cv2.putText(frame, f"Status: {status}", (x, y - 50), cv2.FONT_HERSHEY_COMPLEX, 0.8, (255, 255, 255), 1)
 
