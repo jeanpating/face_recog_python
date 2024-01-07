@@ -166,7 +166,14 @@ while True:
             clock_types = ['PM-TIME-IN', 'PM-TIME-OUT']
 
         # Set the clock_type based on the number of attempts
-        clock_type = clock_types[attendance_attempts[key] - 1]
+        try:
+            clock_type = clock_types[attendance_attempts[key] - 1]
+        except:
+            toast = Notification(app_id="Attendance Report",
+                                    title="Maximum Attempts Reached",
+                                    msg="You have reached the maximum attempts for today.",
+                                    duration="short")
+            toast.show()
         
         # Append values to the attendance list
         attendance.append([str(output[0]), str(timestamp), clock_type])
