@@ -78,7 +78,7 @@ while True:
     ts = time.time()
     date = datetime.fromtimestamp(ts).strftime("%d-%m-%Y")
     timestamp = datetime.fromtimestamp(ts).strftime("%H:%M:%S") 
-    exist = os.path.isfile("Attendance/Attendance_" + date + ".csv")
+    #exist = os.path.isfile("Attendance/Attendance_" + date + ".csv")
 
     # Check if any faces are detected
     if faces:
@@ -94,6 +94,17 @@ while True:
                 continue
 
             output = knn.predict(resized_img)
+
+            #handle unknown users
+            confidence = knn.predict_proba(resized_img)
+
+            threshold = 0.8
+
+            if np.max(confidence) < threshold:
+                output = "X"
+                cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 0, 255), 1)
+                cv2.rectangle(frame, (x, y-40), (x+w, y), (0, 0, 255), -1)
+                cv2.putText(frame, str(output), (x, y-15), cv2.FONT_HERSHEY_COMPLEX, 1, (255, 255, 255), 1)
 
             # Fetch the employee's schedule from the 'employeesdb' database
             schedule_query = "SELECT am_time_in, pm_time_in FROM employee_schedule WHERE name = %s"
@@ -152,6 +163,10 @@ while True:
 
     if show_count and not(eye_flag):
         show_count = False 
+
+        # Skip attendance recording for unregistered person
+        if output == "X":
+            continue
 
         # Append values to the attendance list
         key = f"{str(output[0])}_{date}"

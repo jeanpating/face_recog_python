@@ -280,12 +280,17 @@ class EmployeeRegistrationApp:
             for face in faces:
                 x, y, w, h = face.left(), face.top(), face.width(), face.height()
                 crop_img = frame[y:y + h, x:x + w, :]
-                resized_img = cv2.resize(crop_img, (50, 50))
-                if len(self.faces_data) <= 100 and self.i % 10 == 0:
-                    self.faces_data.append(resized_img)
-                self.i = self.i + 1
-                cv2.putText(frame, str(len(self.faces_data)), (50, 50), cv2.FONT_HERSHEY_COMPLEX, 1, (50, 50, 255), 1)
-                cv2.rectangle(frame, (x, y), (x + w, y + h), (50, 50, 255), 1)
+
+                # Check if crop_img is not empty before resizing
+                if not crop_img.size == 0:
+                    resized_img = cv2.resize(crop_img, (50, 50))
+                    if len(self.faces_data) <= 100 and self.i % 10 == 0:
+                        self.faces_data.append(resized_img)
+                    self.i = self.i + 1
+                    cv2.putText(frame, str(len(self.faces_data)), (50, 50), cv2.FONT_HERSHEY_COMPLEX, 1, (50, 50, 255), 1)
+                    cv2.rectangle(frame, (x, y), (x + w, y + h), (50, 50, 255), 1)
+                else:
+                    print("Warning: frame is empty.")
 
             for (i, faces) in enumerate(faces):
                 shape = self.predictor(gray, faces)
