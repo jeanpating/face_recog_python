@@ -203,8 +203,8 @@ class EmployeeRegistrationApp:
 
         ret, frame = self.camera.read()
         if ret:
-            cv2.imwrite("pictures/captured_picture.jpg", frame)
-            self.display_picture("pictures/captured_picture.jpg")
+            cv2.imwrite("C:/xampp/htdocs/cp2-php/profilepics/captured_picture.jpg", frame)
+            self.display_picture("C:/xampp/htdocs/cp2-php/profilepics/captured_picture.jpg")
         else:
             messagebox.showerror("Error", "Failed to capture picture.")
 
