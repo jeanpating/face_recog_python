@@ -80,55 +80,68 @@ while True:
     timestamp = datetime.fromtimestamp(ts).strftime("%H:%M:%S") 
     exist = os.path.isfile("Attendance/Attendance_" + date + ".csv")
 
-    for face in faces:
-        x, y, w, h = face.left(), face.top(), face.width(), face.height()
-        crop_img = frame[y:y+h, x:x+w, :]
-        resized_img = cv2.resize(crop_img, (50, 50)).flatten().reshape(1, -1)
-        output = knn.predict(resized_img)
+    # Check if any faces are detected
+    if faces:
+        for face in faces:
+            x, y, w, h = face.left(), face.top(), face.width(), face.height()
+            crop_img = frame[y:y+h, x:x+w, :]
 
-        # Fetch the employee's schedule from the 'employeesdb' database
-        schedule_query = "SELECT am_time_in, pm_time_in FROM employee_schedule WHERE name = %s"
-        cursor_schedule.execute(schedule_query, (str(output[0]),))
-        schedule = cursor_schedule.fetchone()
+            try:
+                # Attempt to resize the image and flatten it
+                resized_img = cv2.resize(crop_img, (50, 50)).flatten().reshape(1, -1)
+            except cv2.error as e:
+                print(f"Error resizing image: {e}")
+                continue
 
-        if schedule:
-            am_time_in, pm_time_in = schedule
+            output = knn.predict(resized_img)
 
-            scheduled_time_am = datetime.strptime(am_time_in, "%H:%M")
-            scheduled_time_pm = datetime.strptime(pm_time_in, "%H:%M")
-            attendance_time = datetime.strptime(timestamp, "%H:%M:%S")
+            # Fetch the employee's schedule from the 'employeesdb' database
+            schedule_query = "SELECT am_time_in, pm_time_in FROM employee_schedule WHERE name = %s"
+            cursor_schedule.execute(schedule_query, (str(output[0]),))
+            schedule = cursor_schedule.fetchone()
 
-            # Determine if it's AM or PM timeframe
-            if 1 <= attendance_time.hour <= 11:
-                clock_type = 'AM-TIME-IN' if attendance_time < scheduled_time_am else 'AM-TIME-OUT'
-            else:
-                clock_type = 'PM-TIME-IN' if attendance_time < scheduled_time_pm else 'PM-TIME-OUT'
+            if schedule:
+                am_time_in, pm_time_in = schedule
 
-            # Compare attendance time with scheduled time
-            if 1 <= attendance_time.hour <= 11:
-                status = "Early" if attendance_time < scheduled_time_am else "On Time" if attendance_time == scheduled_time_am else "Late"
-            else:
-                status = "Early" if attendance_time < scheduled_time_pm else "On Time" if attendance_time == scheduled_time_pm else "Late"
+                scheduled_time_am = datetime.strptime(am_time_in, "%H:%M")
+                scheduled_time_pm = datetime.strptime(pm_time_in, "%H:%M")
+                attendance_time = datetime.strptime(timestamp, "%H:%M:%S")
 
-            cv2.putText(frame, f"Status: {status}", (x, y - 50), cv2.FONT_HERSHEY_COMPLEX, 0.8, (255, 255, 255), 1)
+                # Determine if it's AM or PM timeframe
+                if 1 <= attendance_time.hour <= 11:
+                    clock_type = 'AM-TIME-IN' if attendance_time < scheduled_time_am else 'AM-TIME-OUT'
+                else:
+                    clock_type = 'PM-TIME-IN' if attendance_time < scheduled_time_pm else 'PM-TIME-OUT'
 
-        cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 0, 255), 1)
-        cv2.rectangle(frame, (x, y), (x+w, y+h), (50, 50, 255), 2)
-        cv2.rectangle(frame, (x, y-40), (x+w, y), (50, 50, 255), -1)
-        cv2.putText(frame, str(output[0]), (x, y-15), cv2.FONT_HERSHEY_COMPLEX, 1, (255, 255, 255), 1)
-        cv2.rectangle(frame, (x, y), (x+w, y+h), (50, 50, 255), 1)
+                # Compare attendance time with scheduled time
+                if 1 <= attendance_time.hour <= 11:
+                    status = "Early" if attendance_time < scheduled_time_am else "On Time" if attendance_time == scheduled_time_am else "Late"
+                else:
+                    status = "Early" if attendance_time < scheduled_time_pm else "On Time" if attendance_time == scheduled_time_pm else "Late"
 
-        #EYE RECTANGLE
-        eye_flag = False 
-        roi_gray = gray[y:y + h, x:x + w]
-        roi_color = frame[y:y + h, x:x + w]
-        eyes = eye_cascade.detectMultiScale(roi_gray, 1.3, 5)
+                cv2.putText(frame, f"Status: {status}", (x, y - 50), cv2.FONT_HERSHEY_COMPLEX, 0.8, (255, 255, 255), 1)
 
-        for (ex, ey, ew, eh) in eyes:
-            # Set eye_flag to True only if blinking is detected
-            eye_flag = True
+            cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 0, 255), 1)
+            cv2.rectangle(frame, (x, y), (x+w, y+h), (50, 50, 255), 2)
+            cv2.rectangle(frame, (x, y-40), (x+w, y), (50, 50, 255), -1)
+            cv2.putText(frame, str(output[0]), (x, y-15), cv2.FONT_HERSHEY_COMPLEX, 1, (255, 255, 255), 1)
+            cv2.rectangle(frame, (x, y), (x+w, y+h), (50, 50, 255), 1)
 
-            cv2.rectangle(roi_color, (ex, ey), (ex + ew, ey + eh), (255, 255, 0), 2)
+            # EYE RECTANGLE
+            eye_flag = False 
+            roi_gray = gray[y:y + h, x:x + w]
+            roi_color = frame[y:y + h, x:x + w]
+            eyes = eye_cascade.detectMultiScale(roi_gray, 1.3, 5)
+
+            for (ex, ey, ew, eh) in eyes:
+                # Set eye_flag to True only if blinking is detected
+                eye_flag = True
+                cv2.rectangle(roi_color, (ex, ey), (ex + ew, ey + eh), (255, 255, 0), 2)
+
+    else:
+        # Display a message on the frame when no faces are detected
+        no_faces_message = "No faces detected"
+        cv2.putText(frame, no_faces_message, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2)
 
     imgBackground[162:162 + 480, 55:55 + 640] = frame
     cv2.imshow("Frame", imgBackground)
@@ -244,7 +257,7 @@ if 'attendance_db' in locals() and attendance_db.is_connected():
     print("Connection to attendancedb closed")
 
 if 'schedule_db' in locals() and schedule_db.is_connected():
-    cursor_attendance.close()
+    cursor_schedule.close()
     schedule_db.close()
     print("Connection to scheduledb closed")    
 
