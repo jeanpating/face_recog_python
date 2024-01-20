@@ -63,9 +63,12 @@ imgBackground = cv2.imread("background.png")
 eye_flag = True
 show_count = True
 
-# Initialize attendance list and attempts dictionary outside the loop
+# Attendance attempts
 attendance = []
 attendance_attempts = {}
+
+# Time interval dictionary
+last_clock_in_time = {}
 
 while True:
     ret, frame = video.read()
@@ -175,17 +178,35 @@ while True:
         else:
             attendance_attempts[key] += 1
 
-        # Limit the attempts to a maximum of 4
-        if attendance_attempts[key] > 4:
-            print("Maximum attendance attempts reached for today.")
-            # Notify the user about the maximum attempts
-            toast = Notification(app_id="Attendance Report",
-                                title="Maximum Attempts Reached",
-                                msg="You have reached the maximum attempts for today.",
+            # Time interval
+            last_time = last_clock_in_time[key]
+            current_time = time.time()
+            time_difference = current_time - last_time
+
+            time_interval = 10  # 10 seconds for testing
+
+            if time_difference < time_interval:
+                print(f"Time interval not reached for {output[0]}")
+                toast = Notification(app_id="Attendance Report",
+                                title="Hello! " + str(output[0]),
+                                msg="Time interval not reached yet",
                                 duration="short")
-            toast.show()
+                toast.show()
+                continue
+
+        last_clock_in_time[key] = time.time()
+
+        # Limit the attempts to a maximum of 4
+        # if attendance_attempts[key] > 4:
+        #     print("Maximum attendance attempts reached for today.")
+        #     # Notify the user about the maximum attempts
+        #     toast = Notification(app_id="Attendance Report",
+        #                         title="Maximum Attempts Reached",
+        #                         msg="You have reached the maximum attempts for today.",
+        #                         duration="short")
+        #     toast.show()
             
-            continue
+        #     continue
 
         # Determine AM or PM timeframe
         if 1 <= attendance_time.hour <= 11:
