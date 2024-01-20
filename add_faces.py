@@ -16,6 +16,9 @@ class EmployeeRegistrationApp:
         self.root = root
         self.root.title("Employee Registration")
         self.root.geometry("950x500")
+        self.camera_opened = False
+        self.camera = None
+        self.picture_counter = self.load_counter()
 
         self.style = ttkthemes.ThemedStyle(root)
         self.style.set_theme("breeze")  # You can choose a different theme here
@@ -196,15 +199,31 @@ class EmployeeRegistrationApp:
             self.display_picture(self.picture_path)
             messagebox.showinfo("Picture Uploaded", "Employee picture uploaded successfully.")
 
+    def load_counter(self):
+        try:
+            with open("pictures/picture_counter.txt", "r") as file:
+                return int(file.read().strip())
+        except (FileNotFoundError, ValueError):
+            return 1
+
+    def save_counter(self):
+        with open("pictures/picture_counter.txt", "w") as file:
+            file.write(str(self.picture_counter))
+
     def take_picture(self):
         if not self.camera_opened:
             self.camera = cv2.VideoCapture(0)
             self.camera_opened = True
-
+            
         ret, frame = self.camera.read()
         if ret:
-            cv2.imwrite("C:/xampp/htdocs/cp2-php/profilepics/captured_picture.jpg", frame)
-            self.display_picture("C:/xampp/htdocs/cp2-php/profilepics/captured_picture.jpg")
+            filename = f"C:/xampp/htdocs/cp2-php/profilepics/captured_picture_{self.picture_counter}.jpg"
+            # Save
+            cv2.imwrite(filename, frame)
+            # Display
+            self.display_picture(filename)
+            self.picture_counter += 1
+            self.save_counter()
         else:
             messagebox.showerror("Error", "Failed to capture picture.")
 
