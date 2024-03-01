@@ -160,7 +160,7 @@ while True:
     imgBackground[162:162 + 480, 55:55 + 640] = frame
     cv2.imshow("Frame", imgBackground)
     k = cv2.waitKey(1)
-
+    
     if eye_flag:
         show_count = True
 
@@ -259,6 +259,7 @@ while True:
                 insert_values = (datetime.strptime(date, "%d-%m-%Y").strftime("%Y-%m-%d"), str(output[0]), str(timestamp), status, clock_type)
                 cursor_attendance.execute(insert_query, insert_values)
                 attendance_db.commit()
+                speak("Attendance taken for" + str(output[0]))
                 print("Record inserted successfully")
                 toast = Notification(app_id="Attendance Report",
                                     title="Hello! " + str(output[0]),
@@ -269,6 +270,7 @@ while True:
                 toast.show()
             else:
                 print("Attendance for the same person, same date, and same clock type already exists in attendancedb")
+                speak("Attendance already taken for" + str(output[0]))
                 toast = Notification(app_id="Attendance already taken",
                                     title="Hello! " + str(output[0]),
                                     msg="You have already timed-in today",
