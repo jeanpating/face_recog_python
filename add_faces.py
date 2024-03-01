@@ -53,13 +53,13 @@ class EmployeeRegistrationApp:
 
         # Create frames
         self.left_frame = ttk.Frame(self.root)
-        self.left_frame.pack(side=tk.LEFT, fill=tk.Y, padx=20)
+        self.left_frame.pack(side=tk.LEFT, fill=tk.Y, padx=150)
 
         self.middle_frame = ttk.Frame(self.root)
-        self.middle_frame.pack(side=tk.LEFT, fill=tk.Y, padx=20)
+        self.middle_frame.pack(side=tk.LEFT, fill=tk.Y, padx=0)
 
         self.right_frame = ttk.Frame(self.root)
-        self.right_frame.pack(side=tk.LEFT, fill=tk.Y, padx=20)
+        self.right_frame.pack(side=tk.LEFT, fill=tk.Y, padx=0)
 
         # Subheaders
         basic_info_label = ttk.Label(self.left_frame, text="BASIC INFORMATION", font=("Helvetica", 14, "bold"))
