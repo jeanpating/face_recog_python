@@ -134,6 +134,37 @@ while True:
                     status = "Early" if attendance_time < scheduled_time_pm else "On Time" if attendance_time == scheduled_time_pm else "Late"
 
                 cv2.putText(frame, f"Status: {status}", (x, y - 50), cv2.FONT_HERSHEY_COMPLEX, 0.8, (255, 255, 255), 1)
+            
+
+
+            # Speak if the schedule is not set
+            else:
+                key = f"{str(output[0])}_{date}"
+                if key not in attendance_attempts:
+                    attendance_attempts[key] = 1
+                else:
+                    attendance_attempts[key] += 1
+
+                    # Time interval
+                    last_time = last_clock_in_time[key]
+                    current_time = time.time()
+                    time_difference = current_time - last_time
+                    time_interval = 60  # 60 seconds for testing
+
+                    if time_difference < time_interval:
+                        print(f"Schedule not set for {output[0]}")
+                        toast = Notification(app_id="Attendance Report",
+                                        title="Hello!",
+                                        msg="Schedule not set for " + str(output[0]),
+                                        duration="short")
+                        toast.show()
+                        continue
+                last_clock_in_time[key] = time.time()
+                
+                
+
+
+
 
             cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 0, 255), 1)
             cv2.rectangle(frame, (x, y), (x+w, y+h), (50, 50, 255), 2)
