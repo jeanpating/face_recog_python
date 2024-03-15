@@ -153,11 +153,8 @@ while True:
 
                     if time_difference < time_interval:
                         print(f"Schedule not set for {output[0]}")
-                        toast = Notification(app_id="Attendance Report",
-                                        title="Hello!",
-                                        msg="Schedule not set for " + str(output[0]),
-                                        duration="short")
-                        toast.show()
+                        face_message = "Schedule not set for " + str(output[0])
+                        cv2.putText(frame, face_message, (x, y-15), cv2.FONT_HERSHEY_COMPLEX, 0.5, (255, 255, 255), 1)
                         continue
                 last_clock_in_time[key] = time.time()
                 
@@ -171,6 +168,8 @@ while True:
             cv2.rectangle(frame, (x, y-40), (x+w, y), (50, 50, 255), -1)
             cv2.putText(frame, str(output[0]), (x, y-15), cv2.FONT_HERSHEY_COMPLEX, 1, (255, 255, 255), 1)
             cv2.rectangle(frame, (x, y), (x+w, y+h), (50, 50, 255), 1)
+            face_message = "Blink to take Attendance"
+            cv2.putText(frame, face_message, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
 
             # EYE RECTANGLE
             eye_flag = False 
