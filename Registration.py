@@ -65,9 +65,6 @@ class EmployeeRegistrationApp:
         basic_info_label = ttk.Label(self.left_frame, text="BASIC INFORMATION", font=("Helvetica", 14, "bold"))
         basic_info_label.pack(pady=10)
 
-        # schedule_label = ttk.Label(self.middle_frame, text="SCHEDULE", font=("Helvetica", 14, "bold"))
-        # schedule_label.pack(pady=10)
-
         upload_picture_label = ttk.Label(self.right_frame, text="UPLOAD A PICTURE", font=("Helvetica", 14, "bold"))
         upload_picture_label.pack(pady=10)
 
@@ -79,10 +76,8 @@ class EmployeeRegistrationApp:
         )
         self.cursor = self.conn.cursor()
 
-        # Create the "employees" table if it doesn't exist
+        # Employee table in database
         self.create_employees_table()
-
-        # ... (your existing code)
 
     def create_employees_table(self):
         # SQL query to create the "employees" table
@@ -115,24 +110,11 @@ class EmployeeRegistrationApp:
         self.contact_entry = self.create_entry(self.left_frame, "Contact Number:")
         self.email_entry = self.create_entry(self.left_frame, "Email Address:")
 
-        # # Schedule in the middle
-        # starting_hours_label = ttk.Label(self.middle_frame, text="Time-in", font=("Helvetica", 12))
-        # starting_hours_label.pack(pady=10)
-
-        # self.starting_hours_entry = self.create_entry(self.middle_frame, "Starting Hours:")
-        # self.starting_minutes_entry = self.create_entry(self.middle_frame, "Starting Minutes:")
-
-        # final_hours_label = ttk.Label(self.middle_frame, text="Time-out", font=("Helvetica", 12))
-        # final_hours_label.pack(pady=10)
-
-        # self.final_hours_entry = self.create_entry(self.middle_frame, "Final Hours:")
-        # self.final_minutes_entry = self.create_entry(self.middle_frame, "Final Minutes:")
-
         # Upload pictures on the right
         self.picture_frame = ttk.Frame(self.right_frame, borderwidth=2, relief="solid", width=100, height=100)
         self.picture_frame.pack(pady=10)
 
-        self.picture_label = tk.Label(self.picture_frame)  # Add a label inside the frame
+        self.picture_label = tk.Label(self.picture_frame) 
         self.picture_label.pack(fill='both', expand=True)
 
         self.picture_button = ttk.Button(self.right_frame, text="Upload a Picture", command=self.upload_picture)
@@ -184,9 +166,8 @@ class EmployeeRegistrationApp:
     def display_picture(self, picture_path):
         image = Image.open(picture_path)
 
-        # Resize the image to fit the label
-        target_width = 100  # Set the desired width (adjust as needed)
-        target_height = 100  # Set the desired height (adjust as needed)
+        target_width = 100  
+        target_height = 100  
         image = image.resize((target_width, target_height), Image.ANTIALIAS)
 
         image = ImageTk.PhotoImage(image)
@@ -238,16 +219,8 @@ class EmployeeRegistrationApp:
         contact = self.contact_entry.get()
         email = self.email_entry.get()
 
-        # starting_hours = self.starting_hours_entry.get()
-        # starting_minutes = self.starting_minutes_entry.get()
-        # final_hours = self.final_hours_entry.get()
-        # final_minutes = self.final_minutes_entry.get()
-
-        # starting_schedule = f"{starting_hours}:{starting_minutes}"
-        # final_schedule = f"{final_hours}:{final_minutes}"
-
         if not self.picture_path:
-            messagebox.showerror("Error", "Please upload or take a picture first.")
+            messagebox.showerror("Error", "Please upload a picture first.")
             return
 
         try:
@@ -258,7 +231,7 @@ class EmployeeRegistrationApp:
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
             """, (emp_id, name, dept, pos, address, contact, email, self.picture_path))
             self.conn.commit()
-            messagebox.showinfo("Success", "Employee details added to the employeesdb database.")
+            messagebox.showinfo("Success", "Employee details added to the database.")
         except Exception as e:
             print(f"Error: {e}")
             self.conn.rollback()
@@ -269,7 +242,6 @@ class EmployeeRegistrationApp:
         employee_id = self.cursor.fetchone()[0]
         print(f"Employee ID is: {employee_id}")
 
-        # Inserting data into the scheduledb database with emp_id and other fields as NULL
         try:
             self.cursor.execute("""
                 INSERT INTO scheduledb.employees 
@@ -277,7 +249,7 @@ class EmployeeRegistrationApp:
                 VALUES (%s, %s, %s, NULL)
             """, (emp_id, name, self.picture_path))
             self.conn.commit()
-            print("Employee details added to the scheduledb database.")
+            print("Employee details added to the database.")
         except Exception as e:
             print(f"Error: {e}")
             self.conn.rollback()
