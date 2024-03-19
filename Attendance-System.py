@@ -217,11 +217,11 @@ while True:
 
             if time_difference < time_interval:
                 print(f"Time interval not reached for {output[0]}")
-                toast = Notification(app_id="Attendance Report",
-                                title="Hello! " + str(output[0]),
-                                msg="Time interval not reached yet",
-                                duration="short")
-                toast.show()
+                # toast = Notification(app_id="Attendance Report",
+                #                 title="Hello! " + str(output[0]),
+                #                 msg="Time interval not reached yet",
+                #                 duration="short")
+                # toast.show()
                 continue
 
         last_clock_in_time[key] = time.time()
