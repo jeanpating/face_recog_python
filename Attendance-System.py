@@ -135,9 +135,6 @@ while True:
 
                 cv2.putText(frame, f"Status: {status}", (x, y - 50), cv2.FONT_HERSHEY_COMPLEX, 0.8, (255, 255, 255), 1)
             
-
-
-            # Speak if the schedule is not set
             else:
                 key = f"{str(output[0])}_{date}"
                 if key not in attendance_attempts:
@@ -149,7 +146,7 @@ while True:
                     last_time = last_clock_in_time[key]
                     current_time = time.time()
                     time_difference = current_time - last_time
-                    time_interval = 10  # 60 seconds for testing
+                    time_interval = 10  # 10 seconds for testing
 
                     if time_difference < time_interval:
                         print(f"Schedule not set for {output[0]}")
@@ -158,16 +155,12 @@ while True:
                         continue
                 last_clock_in_time[key] = time.time()
                 
-                
-
-
-
-
             cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 0, 255), 1)
             cv2.rectangle(frame, (x, y), (x+w, y+h), (50, 50, 255), 2)
             cv2.rectangle(frame, (x, y-40), (x+w, y), (50, 50, 255), -1)
             cv2.putText(frame, str(output[0]), (x, y-15), cv2.FONT_HERSHEY_COMPLEX, 1, (255, 255, 255), 1)
             cv2.rectangle(frame, (x, y), (x+w, y+h), (50, 50, 255), 1)
+            # Display a message on the frame when when faces are detected
             face_message = "Blink to take Attendance"
             cv2.putText(frame, face_message, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
 
@@ -216,13 +209,12 @@ while True:
             else:
                 attendance_attempts[key] += 1
 
-            # Continue with the rest of the attendance recording logic
-
             last_clock_in_time[key] = current_time  # Update the last clock-in time
         else:
             # Skip updating attendance attempts if the time interval is not reached
             print(f"Time interval not reached for {output[0]}")
             continue
+
         # Limit the attempts to a maximum of 4
         # if attendance_attempts[key] > 4:
         #     print("Maximum attendance attempts reached for today.")
@@ -286,7 +278,9 @@ while True:
                 insert_values = (datetime.strptime(date, "%d-%m-%Y").strftime("%Y-%m-%d"), str(output[0]), str(timestamp), status, clock_type)
                 cursor_attendance.execute(insert_query, insert_values)
                 attendance_db.commit()
+
                 # Check if the attendance attempts for the current person is an odd number
+                # 1, 3, 5... attempts are for time in, second attempt is for time out
                 if attendance_attempts.get(key, 0) % 2 != 0:
                     speak("Attendance taken for " + str(output[0]))
                     print("Record inserted successfully")
@@ -307,7 +301,6 @@ while True:
                                         duration="short")
                     toast.show()
 
-
             else:
                 print("Attendance for the same person, same date, and same clock type already exists in attendancedb")
                 speak("Attendance already taken for" + str(output[0]))
@@ -316,8 +309,10 @@ while True:
                                     msg="You have already timed-in today",
                                     duration="short")
                 toast.show()
+
         except mysql.connector.Error as err:
             print(f"Error: {err}")
+            
         print("Attendance Attempts:", attendance_attempts)
 
     if k == ord('q'):
