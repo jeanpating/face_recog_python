@@ -149,7 +149,7 @@ while True:
                     last_time = last_clock_in_time[key]
                     current_time = time.time()
                     time_difference = current_time - last_time
-                    time_interval = 60  # 60 seconds for testing
+                    time_interval = 10  # 60 seconds for testing
 
                     if time_difference < time_interval:
                         print(f"Schedule not set for {output[0]}")
@@ -197,35 +197,32 @@ while True:
     if show_count and not(eye_flag):
         show_count = False 
 
+        key = f"{str(output[0])}_{date}"
         # Skip attendance recording for unregistered person
         if output == "X":
             continue
 
-        # Append values to the attendance list
-        key = f"{str(output[0])}_{date}"
-        if key not in attendance_attempts:
-            attendance_attempts[key] = 1
+        # Check if the time interval is reached before updating attendance attempts
+        last_time = last_clock_in_time.get(key, 0)  # Get the last clock-in time or default to 0
+        current_time = time.time()
+        time_difference = current_time - last_time
+
+        time_interval = 10  # 10 seconds for testing
+
+        if time_difference >= time_interval:
+            # Update the attendance attempts only if the time interval is reached
+            if key not in attendance_attempts:
+                attendance_attempts[key] = 1
+            else:
+                attendance_attempts[key] += 1
+
+            # Continue with the rest of the attendance recording logic
+
+            last_clock_in_time[key] = current_time  # Update the last clock-in time
         else:
-            attendance_attempts[key] += 1
-
-            # Time interval
-            last_time = last_clock_in_time[key]
-            current_time = time.time()
-            time_difference = current_time - last_time
-
-            time_interval = 10  # 10 seconds for testing
-
-            if time_difference < time_interval:
-                print(f"Time interval not reached for {output[0]}")
-                # toast = Notification(app_id="Attendance Report",
-                #                 title="Hello! " + str(output[0]),
-                #                 msg="Time interval not reached yet",
-                #                 duration="short")
-                # toast.show()
-                continue
-
-        last_clock_in_time[key] = time.time()
-
+            # Skip updating attendance attempts if the time interval is not reached
+            print(f"Time interval not reached for {output[0]}")
+            continue
         # Limit the attempts to a maximum of 4
         # if attendance_attempts[key] > 4:
         #     print("Maximum attendance attempts reached for today.")
@@ -289,15 +286,28 @@ while True:
                 insert_values = (datetime.strptime(date, "%d-%m-%Y").strftime("%Y-%m-%d"), str(output[0]), str(timestamp), status, clock_type)
                 cursor_attendance.execute(insert_query, insert_values)
                 attendance_db.commit()
-                speak("Attendance taken for" + str(output[0]))
-                print("Record inserted successfully")
-                toast = Notification(app_id="Attendance Report",
-                                    title="Hello! " + str(output[0]),
-                                    msg="You are " + str(status) + "\n" +
-                                        "Schedule: " + str(schedule[0]) + "\n" +
-                                        "Time-in: " + str(timestamp),
-                                    duration="short")
-                toast.show()
+                # Check if the attendance attempts for the current person is an odd number
+                if attendance_attempts.get(key, 0) % 2 != 0:
+                    speak("Attendance taken for " + str(output[0]))
+                    print("Record inserted successfully")
+                    toast = Notification(app_id="Attendance Report",
+                                        title="Hello! " + str(output[0]),
+                                        msg="You are " + str(status) + "\n" +
+                                            "Schedule: " + str(schedule[0]) + "\n" +
+                                            "Time-in: " + str(timestamp),
+                                        duration="short")
+                    toast.show()
+                else: 
+                    speak(str(output[0]) + " successfully timed out")
+                    print("Record inserted successfully")
+                    toast = Notification(app_id="Attendance Report",
+                                        title="Hello! " + str(output[0]),
+                                        msg="You have successfully timed-out\n" +
+                                            "Time-out: " + str(timestamp),
+                                        duration="short")
+                    toast.show()
+
+
             else:
                 print("Attendance for the same person, same date, and same clock type already exists in attendancedb")
                 speak("Attendance already taken for" + str(output[0]))
@@ -306,10 +316,10 @@ while True:
                                     msg="You have already timed-in today",
                                     duration="short")
                 toast.show()
-
         except mysql.connector.Error as err:
             print(f"Error: {err}")
-        
+        print("Attendance Attempts:", attendance_attempts)
+
     if k == ord('q'):
         break
 
