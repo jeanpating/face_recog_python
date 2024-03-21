@@ -1,3 +1,4 @@
+import re
 import cv2
 import dlib
 import pickle
@@ -219,9 +220,28 @@ class EmployeeRegistrationApp:
         contact = self.contact_entry.get()
         email = self.email_entry.get()
 
-        if not self.picture_path:
-            messagebox.showerror("Error", "Please upload a picture first.")
+        # Validate Employee ID length
+        if len(emp_id) != 10:
+            messagebox.showerror("Error", "Employee ID must be exactly 10 characters long.")
             return
+        
+        if len(contact) != 11:
+            messagebox.showerror("Error", "Contact number must be exactly 11 characters long.")
+            return
+
+        # Validate Email format
+        if not re.match(r"[^@]+@[^@]+\.[^@]+", email):
+            messagebox.showerror("Error", "Invalid email address format.")
+            return
+
+        # Validate Email domain
+        if not email.endswith("@gmail.com") and not email.endswith("@yahoo.com") and not email.endswith("@email.com"):
+            messagebox.showerror("Error", "Email address must be from either Gmail or Yahoo domains.")
+            return
+
+        # if not self.picture_path:
+        #     messagebox.showerror("Error", "Please upload a picture first.")
+        #     return
 
         try:
             # Inserting data into the employeesdb database
