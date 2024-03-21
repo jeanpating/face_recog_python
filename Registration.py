@@ -239,9 +239,9 @@ class EmployeeRegistrationApp:
             messagebox.showerror("Error", "Email address must be from either Gmail or Yahoo domains.")
             return
 
-        # if not self.picture_path:
-        #     messagebox.showerror("Error", "Please upload a picture first.")
-        #     return
+        if not self.picture_path:
+            messagebox.showerror("Error", "Please upload a picture first.")
+            return
 
         try:
             # Inserting data into the employeesdb database
