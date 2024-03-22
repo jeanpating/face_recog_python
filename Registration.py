@@ -252,17 +252,28 @@ class EmployeeRegistrationApp:
             """, (emp_id, name, dept, pos, address, contact, email, self.picture_path))
             self.conn.commit()
             messagebox.showinfo("Success", "Employee details added to the database.")
-        except Exception as e:
-            print(f"Error: {e}")
-            self.conn.rollback()
-            messagebox.showerror("Error", f"Error: {e}")
 
-        # Fetch the auto-incremented ID
-        self.cursor.execute("SELECT LAST_INSERT_ID()")
-        employee_id = self.cursor.fetchone()[0]
-        print(f"Employee ID is: {employee_id}")
+            # Fetch the auto-incremented ID
+            self.cursor.execute("SELECT LAST_INSERT_ID()")
+            employee_id = self.cursor.fetchone()[0]
+            print(f"Employee ID is: {employee_id}")
 
-        try:
+            # Generate user_email based on emp_id
+            user_email = f"{email}"
+
+            # Inserting data into the users table
+            user_full_name = name
+            user_pwd = "Employee123"
+            self.cursor.execute("""
+                INSERT INTO emp_acc 
+                (emp_id, user_full_name, user_email, user_pwd)
+                VALUES (%s, %s, %s, %s)
+            """, (emp_id, user_full_name, user_email, user_pwd))
+            self.conn.commit()
+            print("User details added to the database.")
+
+
+            # Inserting data into the scheduledb.employees table
             self.cursor.execute("""
                 INSERT INTO scheduledb.employees 
                 (emp_id, name, picture_path, schedule)
@@ -270,6 +281,7 @@ class EmployeeRegistrationApp:
             """, (emp_id, name, self.picture_path))
             self.conn.commit()
             print("Employee details added to the database.")
+
         except Exception as e:
             print(f"Error: {e}")
             self.conn.rollback()
