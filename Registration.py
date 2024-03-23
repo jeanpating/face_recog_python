@@ -259,16 +259,16 @@ class EmployeeRegistrationApp:
             print(f"Employee ID is: {employee_id}")
 
             # Generate user_email based on emp_id
-            user_email = f"{email}"
+            emp_email = f"{email}"
 
             # Inserting data into the users table
-            user_full_name = name
-            user_pwd = "Employee123"
+            emp_full_name = name
+            emp_pwd = "Employee123"
             self.cursor.execute("""
                 INSERT INTO emp_acc 
-                (emp_id, user_full_name, user_email, user_pwd)
+                (emp_id, emp_full_name, emp_email, emp_pwd)
                 VALUES (%s, %s, %s, %s)
-            """, (emp_id, user_full_name, user_email, user_pwd))
+            """, (emp_id, emp_full_name, emp_email, emp_pwd))
             self.conn.commit()
             print("User details added to the database.")
 
