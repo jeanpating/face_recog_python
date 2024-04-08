@@ -287,7 +287,7 @@ while True:
                     toast = Notification(app_id="Attendance Report",
                                         title="Hello! " + str(output[0]),
                                         msg="You are " + str(status) + "\n" +
-                                            "Schedule: " + str(schedule[0]) + "\n" +
+                                            "Clock: " + clock_type + "\n" +
                                             "Time-in: " + str(timestamp),
                                         duration="short")
                     toast.show()
@@ -297,7 +297,8 @@ while True:
                     toast = Notification(app_id="Attendance Report",
                                         title="Hello! " + str(output[0]),
                                         msg="You have successfully timed-out\n" +
-                                            "Time-out: " + str(timestamp),
+                                            "Time-out: " + str(timestamp) + "\n" +
+                                            "Clock: " + clock_type,
                                         duration="short")
                     toast.show()
 
