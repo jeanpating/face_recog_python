@@ -225,6 +225,11 @@ class EmployeeRegistrationApp:
             messagebox.showerror("Error", "Employee ID must be exactly 10 characters long.")
             return
         
+        # Validate Employee ID does not start with zero
+        if emp_id.startswith("0"):
+            messagebox.showerror("Error", "Employee ID cannot start with zero.")
+            return False   
+        
         if len(contact) != 11:
             messagebox.showerror("Error", "Contact number must be exactly 11 characters long.")
             return
